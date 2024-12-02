@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management App</title>
+<style>
+    /* Basic reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+}
+
+nav h1 {
+    display: inline-block;
+}
+
+nav button {
+    float: right;
+    margin-right: 20px;
+    padding: 10px;
+    background-color: #f44;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#login-section, #task-section {
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-header input {
+    padding: 5px;
+    margin-left: 10px;
+}
+
+#task-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+#task-list li {
+    background-color: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    width: 50%;
+}
+
+.closeBtn {
+    float: right;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.dark-mode {
+    background-color: #333;
+    color: white;
+}
+
+.dark-mode input, .dark-mode select, .dark-mode textarea {
+    background-color: #555;
+    color: white;
+}
+
+
+</style>
+</head>
+<body>
+
+    <header>
+        <nav>
+            <h1>Task Manager</h1>
+            <button id="logoutBtn">Logout</button>
+        </nav>
+    </header>
+
+    <section id="login-section">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+            <p>Don't have an account? <a href="#" id="signupLink">Sign Up</a></p>
+        </form>
+    </section>
+
+    <section id="task-section" style="display:none;">
+        <div class="task-header">
+            <h2>Your Tasks</h2>
+            <button id="addTaskBtn">Add Task</button>
+            <input type="text" id="searchTask" placeholder="Search Tasks">
+        </div>
+
+        <div class="filter">
+            <select id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+            </select>
+            <select id="priorityFilter">
+                <option value="all">All Priorities</option>
+                <option value="high">High Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="low">Low Priority</option>
+            </select>
+        </div>
+
+        <ul id="task-list">
+            <!-- Tasks will be dynamically added here -->
+        </ul>
+
+        <div id="darkModeToggle">
+            <input type="checkbox" id="darkModeCheckbox">
+            <label for="darkModeCheckbox">Dark Mode</label>
+        </div>
+    </section>
+
+    <!-- Modal for adding/editing tasks -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn">&times;</span>
+            <h2>Add/Edit Task</h2>
+            <form id="taskForm">
+                <input type="text" id="taskTitle" placeholder="Task Title" required>
+                <textarea id="taskDescription" placeholder="Task Description"></textarea>
+                <select id="taskCategory">
+                    <option value="work">Work</option>
+                    <option value="personal">Personal</option>
+                </select>
+                <select id="taskPriority">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                <button type="submit">Save Task</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+let isEditing = false;
+let editTaskIndex = null;
+
+document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    // Handle login logic
+    showTaskSection();
+});
+
+document.getElementById('addTaskBtn').addEventListener('click', function() {
+    openModal();
+});
+
+document.getElementById('taskForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const title = document.getElementById('taskTitle').value;
+    const description = document.getElementById('taskDescription').value;
+    const category = document.getElementById('taskCategory').value;
+    const priority = document.getElementById('taskPriority').value;
+
+    if (isEditing) {
+        tasks[editTaskIndex] = { title, description, category, priority };
+        isEditing = false;
+        editTaskIndex = null;
+    } else {
+        tasks.push({ title, description, category, priority });
+    }
+
+    closeModal();
+    renderTasks();
+});
+
+document.getElementById('darkModeCheckbox').addEventListener('change', function() {
+    document.body.classList.toggle('dark-mode');
+});
+
+function openModal(task = null) {
+    document.getElementById('taskModal').style.display = 'block';
+    if (task) {
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description;
+        document.getElementById('taskCategory').value = task.category;
+        document.getElementById('taskPriority').value = task.priority;
+        isEditing = true;
+        editTaskIndex = tasks.indexOf(task);
+    }
+}
+
+function closeModal() {
+    document.getElementById('taskModal').style.display = 'none';
+    document.getElementById('taskForm').reset();
+}
+
+function renderTasks() {
+    const taskList = document.getElementById('task-list');
+    taskList.innerHTML = '';
+    tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${task.title} - ${task.category} - ${task.priority}</span>
+                        <button onclick="editTask(${tasks.indexOf(task)})">Edit</button>`;
+        taskList.appendChild(li);
+    });
+}
+
+function editTask(index) {
+    openModal(tasks[index]);
+}
+
+function showTaskSection() {
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('task-section').style.display = 'block';
+}
+    </script>
+</body>
+</html>
